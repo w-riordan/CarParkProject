@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.geometry.Rectangle2D?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="480.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ViewController">
+   <center>
+      <SplitPane dividerPositions="0.7" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+        <items>
+            <TabPane prefHeight="200.0" prefWidth="200.0" side="LEFT" tabClosingPolicy="UNAVAILABLE">
+              <tabs>
+                  <Tab text="Standard View">
+                     <content>
+                        <ImageView fx:id="defaultImageView" fitHeight="440.0" fitWidth="409.0" pickOnBounds="true" preserveRatio="true">
+                           <viewport>
+                              <Rectangle2D />
+                           </viewport>
+                        </ImageView>
+                     </content>
+                  </Tab>
+                <Tab text="Object View">
+                     <content>
+                        <ImageView fx:id="objectImageView" fitHeight="436.0" fitWidth="407.0" pickOnBounds="true" preserveRatio="true">
+                           <viewport>
+                              <Rectangle2D />
+                           </viewport>
+                        </ImageView>
+                     </content>
+                </Tab>
+                  <Tab text="Threshold View">
+                     <content>
+                        <ImageView fx:id="thresholdImageView" fitHeight="439.0" fitWidth="410.0" pickOnBounds="true" preserveRatio="true" />
+                     </content>
+                  </Tab>
+              </tabs>
+            </TabPane>
+            <TabPane prefHeight="200.0" prefWidth="200.0" side="RIGHT" tabClosingPolicy="UNAVAILABLE">
+              <tabs>
+                <Tab text="Thresholding Settings">
+                     <content>
+                        <VBox prefHeight="200.0" prefWidth="100.0">
+                           <children>
+                              <Label alignment="CENTER" contentDisplay="CENTER" text="Method:" textAlignment="CENTER" />
+                              <RadioButton fx:id="threshGausianRadio" mnemonicParsing="false" onAction="#setThreshMethod" text="Guasian">
+                                 <toggleGroup>
+                                    <ToggleGroup fx:id="thresh_method" />
+                                 </toggleGroup>
+                              </RadioButton>
+                              <RadioButton fx:id="threshMeanRadio" mnemonicParsing="false" onAction="#setThreshMethod" selected="true" text="Mean" toggleGroup="$thresh_method" />
+                              <Label text="Block Size:" />
+                              <Slider fx:id="threshBlockSlider" blockIncrement="2.0" majorTickUnit="10.0" max="50.0" min="3.0" minorTickCount="2" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="9.0" />
+                              <Label text="Change Value:" />
+                              <Slider fx:id="threshChangeSlider" blockIncrement="0.5" majorTickUnit="2.0" max="10.0" min="-10.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" snapToTicks="true" />
+                              <CheckBox fx:id="dropCheck" mnemonicParsing="false" onAction="#setDropCheck" selected="true" text="drop Childless" />
+                           </children>
+                        </VBox>
+                     </content>
+                </Tab>
+                <Tab text="Morphology Settings">
+                     <content>
+                        <VBox prefHeight="200.0" prefWidth="100.0">
+                           <children>
+                              <Label text="Eroding Settings:">
+                                 <VBox.margin>
+                                    <Insets top="10.0" />
+                                 </VBox.margin>
+                              </Label>
+                              <CheckBox fx:id="erodingCheck" mnemonicParsing="false" onAction="#setErodingEnabled" selected="true" text="Enabled" />
+                              <Label text="Eroding Shape:" />
+                              <RadioButton fx:id="erodeEllipseRadio" mnemonicParsing="false" onAction="#setErodingShape" selected="true" text="Ellipse">
+                                 <toggleGroup>
+                                    <ToggleGroup fx:id="erode_shape" />
+                                 </toggleGroup>
+                              </RadioButton>
+                              <RadioButton fx:id="erodeRectRadio" mnemonicParsing="false" onAction="#setErodingShape" text="Rectangle" toggleGroup="$erode_shape" />
+                              <RadioButton fx:id="erodeCrossRadio" mnemonicParsing="false" onAction="#setErodingShape" text="Cross" toggleGroup="$erode_shape" />
+                              <Label text="Eroding Size:" />
+                              <Slider fx:id="erodeSizeSlider" majorTickUnit="2.0" max="13.0" min="3.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="3.0" />
+                              <Label text="Eroding Iterations:" />
+                              <Slider fx:id="erodeIterSlider" blockIncrement="1.0" majorTickUnit="1.0" max="10.0" min="1.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" value="1.0" />
+                              <Label layoutX="10.0" layoutY="20.0" text="Dilating Settings:" />
+                              <CheckBox fx:id="dilatingCheck" layoutX="10.0" layoutY="36.0" mnemonicParsing="false" onAction="#setDilatingEnabled" selected="true" text="Enabled" />
+                              <Label layoutX="10.0" layoutY="54.0" text="Dilating Shape:" />
+                              <RadioButton fx:id="dilateEllipseRadio" layoutX="10.0" layoutY="70.0" mnemonicParsing="false" onAction="#setDilatingShape" selected="true" text="Ellipse">
+                                 <toggleGroup>
+                                    <ToggleGroup fx:id="dilate_shape" />
+                                 </toggleGroup>
+                              </RadioButton>
+                              <RadioButton fx:id="dilateRectRadio" layoutX="10.0" layoutY="88.0" mnemonicParsing="false" onAction="#setDilatingShape" text="Rectangle" toggleGroup="$dilate_shape" />
+                              <RadioButton fx:id="dilateCrossRadio" layoutX="10.0" layoutY="106.0" mnemonicParsing="false" onAction="#setDilatingShape" text="Cross" toggleGroup="$dilate_shape" />
+                              <Label layoutX="10.0" layoutY="124.0" text="Dilating Size:" />
+                              <Slider fx:id="dilateSizeSlider" layoutX="10.0" layoutY="140.0" majorTickUnit="2.0" max="13.0" min="3.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="3.0" />
+                              <Label layoutX="10.0" layoutY="178.0" text="Dilating Iterations:" />
+                              <Slider fx:id="dilateIterSlider" blockIncrement="1.0" layoutX="10.0" layoutY="194.0" majorTickUnit="1.0" max="10.0" min="1.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" value="1.0" />
+                           </children>
+                        </VBox>
+                     </content>
+                </Tab>
+              </tabs>
+            </TabPane>
+        </items>
+      </SplitPane>
+   </center>
+   <top>
+      <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+        <items>
+          <Button fx:id="startButton" mnemonicParsing="false" onAction="#startMonitor" text="Start" />
+            <Button fx:id="stopButton" mnemonicParsing="false" onAction="#stopMonitor" text="Stop" />
+        </items>
+      </ToolBar>
+   </top>
+</BorderPane>
