@@ -54,59 +54,80 @@ public class ParkingMonitor implements Runnable {
 				// Read frame from camera
 				camera.read(defaultImage);
 				
-				//Apply Smoothing Filters
-				//Imgproc.GaussianBlur(defaultImage, defaultImage, new Size(5, 5), 5);
-
+				//TODO Apply Smoothing Filters
+				
 				// Threshold image
 				thresholdFrame();
 
 				// Detect Objects
 				detectObjects();
 
-				// Update Parking Information
+				//TODO Update Parking Information
 
 				// Output images to ImageViews
 				updateImageViews();
 			} while (running);
 			camera.release();
 		} else {
-			// Could not open camera
+			//TODO Could not open camera
 		}
 
 	}
 
 	private void detectObjects() {
-		defaultImage.copyTo(objectsImage);//copy the default image
+		//copy the default image
+		defaultImage.copyTo(objectsImage);
+		
+		//Mat to store heirachy info
 		Mat heirachyFrame = new Mat();
+		
+		//Copy of thresholded binary image
 		Mat tempThresh = new Mat();
 		thresholdImage.copyTo(tempThresh);
+		
 		ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		
+		//Find contours from threshold image
 		Imgproc.findContours(tempThresh, contours, heirachyFrame, Imgproc.RETR_TREE,
 				Imgproc.CHAIN_APPROX_SIMPLE);
+		
+		//Convert heirarchy info from mat to int[]
 		int[] heirarchyData =  new int[ heirachyFrame.width() * heirachyFrame.channels()];
 		heirachyFrame.get(0, 0, heirarchyData);
-		int dropped = 0;
+		
+		//Loop through all contours
 		for (int c = 0; c < contours.size();c++) {
-			MatOfPoint point = (MatOfPoint) contours.get(c);
-			boolean hasChild;
+			MatOfPoint point = (MatOfPoint) contours.get(c);//Get current contour
+			boolean ignoreContour;
+			
+			//if drop childless set ignoreContour flag to true if not a parent
 			if (MonitorSettings.dropChildless){
-				hasChild = heirarchyData[(4 * c)+ 2] != -1;
-			}else{
-				hasChild = true;
+				ignoreContour = heirarchyData[(4 * c)+ 2] == -1;
+			}else{//otherwise set it to false
+				ignoreContour = false;
 			}
+
+			//Create a rotated recctangle surronding the contour
 			MatOfPoint2f pointf = new MatOfPoint2f(point.toArray());
-			Point points[] = new Point[4];
 			RotatedRect r = Imgproc.minAreaRect(pointf);
-			if (r.size.width > 5 && r.size.height > 5 && hasChild) {
+			
+			//if size or width is less than 5 then set ignoreContour flag to true(Filters out some noise)
+			if(r.size.width <= 5 || r.size.height <= 5){
+				ignoreContour = true;
+			}
+			
+			//If ignoreContour flag is not set
+			if ( !ignoreContour) {
+				//Convert the rectangle to points 
+				Point points[] = new Point[4];
 				r.points(points);
+
+				//Draw the rectangles lines to the objects image 
 				for (int i = 0; i < 4; i++)
 					// Draw objects
 					Imgproc.line(objectsImage, points[i], points[(i + 1) % 4], new Scalar(0, 255, 0),5);
-			}else{
-				dropped++;
 			}
 		}
-		System.err.println("Num Dropped = " + dropped);
 	}
 
 	// Outputs the images to the imageviews
