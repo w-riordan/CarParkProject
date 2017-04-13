@@ -45,6 +45,11 @@
                         <ImageView fx:id="thresholdImageView" fitHeight="439.0" fitWidth="410.0" pickOnBounds="true" preserveRatio="true" />
                      </content>
                   </Tab>
+                  <Tab text="Spaces View">
+                     <content>
+                        <ImageView fx:id="spacesImageView" fitHeight="439.0" fitWidth="410.0" pickOnBounds="true" preserveRatio="true" />
+                     </content>
+                  </Tab>
               </tabs>
             </TabPane>
             <TabPane prefHeight="200.0" prefWidth="200.0" side="RIGHT" tabClosingPolicy="UNAVAILABLE">

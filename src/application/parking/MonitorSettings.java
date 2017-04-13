@@ -3,6 +3,11 @@ package application.parking;
 import org.opencv.imgproc.Imgproc;
 
 public class MonitorSettings {
+	
+	/**
+	 * The camera number to read from
+	 */
+	public static int camIndex = 1;
 
 	/**
 	 * Should be set to either ADAPTIVE_THRESH_MEAN_C or ADAPTIVE_THRESH_GAUSSIAN_C from the Imgproc class

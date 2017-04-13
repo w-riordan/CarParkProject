@@ -1,9 +1,11 @@
 package application.parking;
 
+import java.awt.Rectangle;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfPoint;
@@ -23,109 +25,144 @@ public class ParkingMonitor implements Runnable {
 
 	boolean running = false; // Variable that states whether or not the monitor
 								// is running
-	int camIndex = 0;// The index number of the camera to use(-1 opens the first
-						// camera found)
 	VideoCapture camera;// Holds the VideoCapture device(the camera)
 
 	// ImageView References for camera output
-	ImageView objectImageView = null, defaultImageView = null, thresholdImageView = null;
+	ImageView objectImageView = null, defaultImageView = null, thresholdImageView = null, spacesImageView = null;
 
 	// Matrices to hold the raw image data
-	Mat defaultImage, thresholdImage, objectsImage;
+	Mat defaultImage, thresholdImage, objectsImage, spacesImage;
+	
+	SpaceManager spaceMngr ;
 
 	// Constructs a new parking monitor
-	public ParkingMonitor(int camIndex) {
-		this.camIndex = camIndex;
+	public ParkingMonitor(SpaceManager sm) {
+		spaceMngr = sm;
 		camera = new VideoCapture();
 		defaultImage = new Mat();
 		thresholdImage = new Mat();
 		objectsImage = new Mat();
+		spacesImage = new Mat();
 	}
 
 	// Main Loop of monitor to be executed as a thread
 	@Override
 	public void run() {
 
-		camera.open(camIndex);
+		camera.open(MonitorSettings.camIndex);
 		if (camera.isOpened()) {
 			running = true;
 			// Repeat while running
 			do {
 				// Read frame from camera
 				camera.read(defaultImage);
-				
-				//TODO Apply Smoothing Filters
-				
+
+				// TODO Apply Smoothing Filters
+
 				// Threshold image
 				thresholdFrame();
 
 				// Detect Objects
 				detectObjects();
 
-				//TODO Update Parking Information
-
+				// TODO Update Parking Information
+				//checkSpaces()
+				drawSpaces();
 				// Output images to ImageViews
 				updateImageViews();
 			} while (running);
 			camera.release();
 		} else {
-			//TODO Could not open camera
+			// TODO Could not open camera
 		}
 
 	}
 
+	/**
+	 * This method draws the parking spaces from the SpaceManager
+	 * onto the spaces view image.
+	 */
+	private void drawSpaces() {
+		defaultImage.copyTo(spacesImage);
+		//Imgproc.cvtColor(spacesImage, spacesImage, Imgproc.COLOR_GRAY2BGR);
+		System.out.println("Drawing");
+		for (Space s : spaceMngr.getSpaces()){
+			ArrayList<MatOfPoint> points = new ArrayList<>();
+			Point[] p = new Point[4];
+			int[] xpoints = s.getPolygon().xpoints;
+			int[] ypoints = s.getPolygon().ypoints;
+			
+			for (int i = 0; i <4;i++){
+				p[i] = new Point(xpoints[i], ypoints[i]);
+			}
+			Scalar colour = (s.isOccupied())?new Scalar(255, 0, 0):	new Scalar(0, 255, 0);
+			points.add(new MatOfPoint(p));
+			Imgproc.fillPoly(spacesImage, points,  colour);
+			//Calculate size of text
+			Size textSize = Imgproc.getTextSize(s.getName(), Core.FONT_HERSHEY_COMPLEX , 1.0	, 1, null);
+			//Calculate point to draw text centered
+			Rectangle bounds = s.getPolygon().getBounds();
+			Point centerPoint  = new Point( ((bounds.getWidth()/2)+bounds.getX())-(textSize.width/2),((bounds.getHeight()/2)+bounds.getY())-(textSize.height/2));
+			System.err.println(s.getName());
+			Imgproc.putText(spacesImage, s.getName(), centerPoint, Core.FONT_HERSHEY_COMPLEX, 1.0, new Scalar(0,0,0));
+		}
+	}
+
 	private void detectObjects() {
-		//copy the default image
+		// copy the default image
 		defaultImage.copyTo(objectsImage);
-		
-		//Mat to store heirachy info
+
+		// Mat to store heirachy info
 		Mat heirachyFrame = new Mat();
-		
-		//Copy of thresholded binary image
+
+		// Copy of thresholded binary image
 		Mat tempThresh = new Mat();
 		thresholdImage.copyTo(tempThresh);
-		
+
 		ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-		
-		//Find contours from threshold image
-		Imgproc.findContours(tempThresh, contours, heirachyFrame, Imgproc.RETR_TREE,
-				Imgproc.CHAIN_APPROX_SIMPLE);
-		
-		//Convert heirarchy info from mat to int[]
-		int[] heirarchyData =  new int[ heirachyFrame.width() * heirachyFrame.channels()];
-		heirachyFrame.get(0, 0, heirarchyData);
-		
-		//Loop through all contours
-		for (int c = 0; c < contours.size();c++) {
-			MatOfPoint point = (MatOfPoint) contours.get(c);//Get current contour
-			boolean ignoreContour;
-			
-			//if drop childless set ignoreContour flag to true if not a parent
-			if (MonitorSettings.dropChildless){
-				ignoreContour = heirarchyData[(4 * c)+ 2] == -1;
-			}else{//otherwise set it to false
-				ignoreContour = false;
-			}
 
-			//Create a rotated recctangle surronding the contour
-			MatOfPoint2f pointf = new MatOfPoint2f(point.toArray());
-			RotatedRect r = Imgproc.minAreaRect(pointf);
-			
-			//if size or width is less than 5 then set ignoreContour flag to true(Filters out some noise)
-			if(r.size.width <= 5 || r.size.height <= 5){
-				ignoreContour = true;
-			}
-			
-			//If ignoreContour flag is not set
-			if ( !ignoreContour) {
-				//Convert the rectangle to points 
-				Point points[] = new Point[4];
-				r.points(points);
+		// Find contours from threshold image
+		Imgproc.findContours(tempThresh, contours, heirachyFrame, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+		if (contours.size() > 0) {
+			// Convert heirarchy info from mat to int[]
+			int[] heirarchyData = new int[heirachyFrame.width() * heirachyFrame.channels()];
+			heirachyFrame.get(0, 0, heirarchyData);
 
-				//Draw the rectangles lines to the objects image 
-				for (int i = 0; i < 4; i++)
-					// Draw objects
-					Imgproc.line(objectsImage, points[i], points[(i + 1) % 4], new Scalar(0, 255, 0),5);
+			// Loop through all contours
+			for (int c = 0; c < contours.size(); c++) {
+				MatOfPoint point = (MatOfPoint) contours.get(c);// Get current
+																// contour
+				boolean ignoreContour;
+
+				// if drop childless set ignoreContour flag to true if not a
+				// parent
+				if (MonitorSettings.dropChildless) {
+					ignoreContour = heirarchyData[(4 * c) + 2] == -1;
+				} else {// otherwise set it to false
+					ignoreContour = false;
+				}
+
+				// Create a rotated recctangle surronding the contour
+				MatOfPoint2f pointf = new MatOfPoint2f(point.toArray());
+				RotatedRect r = Imgproc.minAreaRect(pointf);
+
+				// if size or width is less than 5 then set ignoreContour flag
+				// to true(Filters out some noise)
+				if (r.size.width <= 5 || r.size.height <= 5) {
+					ignoreContour = true;
+				}
+
+				// If ignoreContour flag is not set
+				if (!ignoreContour) {
+					// Convert the rectangle to points
+					Point points[] = new Point[4];
+					r.points(points);
+
+					// Draw the rectangles lines to the objects image
+					for (int i = 0; i < 4; i++)
+						// Draw objects
+						Imgproc.line(objectsImage, points[i], points[(i + 1) % 4], new Scalar(0, 255, 0), 5);
+				}
 			}
 		}
 	}
@@ -148,6 +185,10 @@ public class ParkingMonitor implements Runnable {
 		if (objectImageView != null) {
 			objectImageView.setImage(convertMatToImage(objectsImage));
 		}
+		// Output Spaces View
+		if (spacesImageView != null) {
+			spacesImageView.setImage(convertMatToImage(spacesImage));
+		}
 	}
 
 	/**
@@ -167,16 +208,21 @@ public class ParkingMonitor implements Runnable {
 	 * performs eroding and dilating to the binary image as needed.
 	 */
 	private void thresholdFrame() {
-		Imgproc.cvtColor(defaultImage, defaultImage, Imgproc.COLOR_BGR2GRAY);
-		Imgproc.adaptiveThreshold(defaultImage, thresholdImage, 255, MonitorSettings.thresholdingType,
+		Mat defaultGreyImage = new Mat();
+		Imgproc.cvtColor(defaultImage, defaultGreyImage, Imgproc.COLOR_BGR2GRAY);
+		Imgproc.adaptiveThreshold(defaultGreyImage, thresholdImage, 255, MonitorSettings.thresholdingType,
 				Imgproc.THRESH_BINARY_INV, MonitorSettings.thresholdingBlockSize, MonitorSettings.thresholdingChange);
-		if (MonitorSettings.erodingEnabled){
-			Imgproc.erode(thresholdImage, thresholdImage, Imgproc.getStructuringElement(MonitorSettings.erodingShape,
-					new Size(MonitorSettings.erodingSize, MonitorSettings.erodingSize)), new Point(-1, -1), MonitorSettings.erodingIterations);
+		if (MonitorSettings.erodingEnabled) {
+			Imgproc.erode(thresholdImage, thresholdImage,
+					Imgproc.getStructuringElement(MonitorSettings.erodingShape,
+							new Size(MonitorSettings.erodingSize, MonitorSettings.erodingSize)),
+					new Point(-1, -1), MonitorSettings.erodingIterations);
 		}
-		if ( MonitorSettings.dilatingEnabled){
-		Imgproc.dilate(thresholdImage, thresholdImage, Imgproc.getStructuringElement(MonitorSettings.dilatingShape,
-				new Size(MonitorSettings.dilatingSize, MonitorSettings.dilatingSize)), new Point(-1, -1), MonitorSettings.dilatingIterations);
+		if (MonitorSettings.dilatingEnabled) {
+			Imgproc.dilate(thresholdImage, thresholdImage,
+					Imgproc.getStructuringElement(MonitorSettings.dilatingShape,
+							new Size(MonitorSettings.dilatingSize, MonitorSettings.dilatingSize)),
+					new Point(-1, -1), MonitorSettings.dilatingIterations);
 		}
 	}
 
@@ -197,11 +243,13 @@ public class ParkingMonitor implements Runnable {
 	 * @param defaultImage
 	 * @param thresholdImage
 	 * @param objectImage
+	 * @Param spacesImage
 	 */
-	public void setOutputImages(ImageView defaultImage, ImageView thresholdImage, ImageView objectImage) {
+	public void setOutputImages(ImageView defaultImage, ImageView thresholdImage, ImageView objectImage, ImageView spacesImage) {
 		this.defaultImageView = defaultImage;
 		this.thresholdImageView = thresholdImage;
 		this.objectImageView = objectImage;
+		this.spacesImageView = spacesImage;
 	}
 
 	/**
