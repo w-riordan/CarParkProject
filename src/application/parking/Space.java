@@ -5,10 +5,10 @@ import java.awt.Polygon;
 import java.awt.Rectangle;
 
 public class Space {
-	Polygon space;
-	boolean occupied = false;
-	int area = 0;
-	String name = "";
+	private Polygon space;
+	private boolean occupied = false;
+	private int area = 0;
+	private String name = "";
 
 	public Space(int[] xpoints, int[] ypoints, String name) {
 		space = new Polygon(xpoints, ypoints, 4);
@@ -54,5 +54,9 @@ public class Space {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public int getArea() {
+		return area;
 	}
 }

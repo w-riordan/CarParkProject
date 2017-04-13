@@ -31,9 +31,9 @@ public class ParkingMonitor implements Runnable {
 	ImageView objectImageView = null, defaultImageView = null, thresholdImageView = null, spacesImageView = null;
 
 	// Matrices to hold the raw image data
-	Mat defaultImage, thresholdImage, objectsImage, spacesImage;
-	
-	SpaceManager spaceMngr ;
+	Mat defaultImage, thresholdImage, objectsImage, spacesImage, objectsThresImage;
+
+	SpaceManager spaceMngr;
 
 	// Constructs a new parking monitor
 	public ParkingMonitor(SpaceManager sm) {
@@ -43,6 +43,7 @@ public class ParkingMonitor implements Runnable {
 		thresholdImage = new Mat();
 		objectsImage = new Mat();
 		spacesImage = new Mat();
+		objectsThresImage = new Mat();
 	}
 
 	// Main Loop of monitor to be executed as a thread
@@ -66,7 +67,7 @@ public class ParkingMonitor implements Runnable {
 				detectObjects();
 
 				// TODO Update Parking Information
-				//checkSpaces()
+				checkSpaces();
 				drawSpaces();
 				// Output images to ImageViews
 				updateImageViews();
@@ -79,38 +80,69 @@ public class ParkingMonitor implements Runnable {
 	}
 
 	/**
-	 * This method draws the parking spaces from the SpaceManager
-	 * onto the spaces view image.
+	 * Check if spaces are occupied or not
+	 */
+	private void checkSpaces() {
+		byte[] data = new byte[objectsThresImage.width() * objectsThresImage.height()];
+		objectsThresImage.get(0, 0, data);
+		for (Space s : spaceMngr.getSpaces()) {
+			Rectangle bounds = s.getBounds();
+			int areaOccupied = 0;
+
+			for (int y = (int) bounds.getMinY(); y < bounds.getMaxY(); y++) {
+				for (int x = (int) bounds.getMinX(); x < bounds.getMaxX(); x++) {
+					if (s.isPointInSpace(x, y)) {
+						if (data[(y * objectsThresImage.width()) + x] == -1) {
+							areaOccupied++;
+						}
+					}
+				}
+			}
+
+			if (areaOccupied >= (s.getArea() * MonitorSettings.occupiedPercentage)) {
+				s.setOccupied(true);
+			} else {
+				s.setOccupied(false);
+			}
+		}
+	}
+
+	/**
+	 * This method draws the parking spaces from the SpaceManager onto the
+	 * spaces view image.
 	 */
 	private void drawSpaces() {
 		defaultImage.copyTo(spacesImage);
-		//Imgproc.cvtColor(spacesImage, spacesImage, Imgproc.COLOR_GRAY2BGR);
+		// Imgproc.cvtColor(spacesImage, spacesImage, Imgproc.COLOR_GRAY2BGR);
 		System.out.println("Drawing");
-		for (Space s : spaceMngr.getSpaces()){
+		for (Space s : spaceMngr.getSpaces()) {
 			ArrayList<MatOfPoint> points = new ArrayList<>();
 			Point[] p = new Point[4];
 			int[] xpoints = s.getPolygon().xpoints;
 			int[] ypoints = s.getPolygon().ypoints;
-			
-			for (int i = 0; i <4;i++){
+
+			for (int i = 0; i < 4; i++) {
 				p[i] = new Point(xpoints[i], ypoints[i]);
 			}
-			Scalar colour = (s.isOccupied())?new Scalar(255, 0, 0):	new Scalar(0, 255, 0);
+			Scalar colour = (s.isOccupied()) ? new Scalar(0, 0, 255) : new Scalar(0, 255, 0);
 			points.add(new MatOfPoint(p));
-			Imgproc.fillPoly(spacesImage, points,  colour);
-			//Calculate size of text
-			Size textSize = Imgproc.getTextSize(s.getName(), Core.FONT_HERSHEY_COMPLEX , 1.0	, 1, null);
-			//Calculate point to draw text centered
+			Imgproc.fillPoly(spacesImage, points, colour);
+			// Calculate size of text
+			Size textSize = Imgproc.getTextSize(s.getName(), Core.FONT_HERSHEY_COMPLEX, 1.0, 1, null);
+			// Calculate point to draw text centered
 			Rectangle bounds = s.getPolygon().getBounds();
-			Point centerPoint  = new Point( ((bounds.getWidth()/2)+bounds.getX())-(textSize.width/2),((bounds.getHeight()/2)+bounds.getY())-(textSize.height/2));
+			Point centerPoint = new Point(((bounds.getWidth() / 2) + bounds.getX()) - (textSize.width / 2),
+					((bounds.getHeight() / 2) + bounds.getY()) - (textSize.height / 2));
 			System.err.println(s.getName());
-			Imgproc.putText(spacesImage, s.getName(), centerPoint, Core.FONT_HERSHEY_COMPLEX, 1.0, new Scalar(0,0,0));
+			Imgproc.putText(spacesImage, s.getName(), centerPoint, Core.FONT_HERSHEY_COMPLEX, 1.0, new Scalar(0, 0, 0));
 		}
 	}
 
 	private void detectObjects() {
 		// copy the default image
 		defaultImage.copyTo(objectsImage);
+		thresholdImage.copyTo(objectsThresImage);
+		objectsThresImage.setTo(new Scalar(0));
 
 		// Mat to store heirachy info
 		Mat heirachyFrame = new Mat();
@@ -120,6 +152,7 @@ public class ParkingMonitor implements Runnable {
 		thresholdImage.copyTo(tempThresh);
 
 		ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		ArrayList<MatOfPoint> objects = new ArrayList<MatOfPoint>();
 
 		// Find contours from threshold image
 		Imgproc.findContours(tempThresh, contours, heirachyFrame, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -158,12 +191,16 @@ public class ParkingMonitor implements Runnable {
 					Point points[] = new Point[4];
 					r.points(points);
 
+					// Add to objects
+					objects.add(point);
+					Imgproc.fillConvexPoly(objectsThresImage, point, new Scalar(255));
 					// Draw the rectangles lines to the objects image
 					for (int i = 0; i < 4; i++)
 						// Draw objects
 						Imgproc.line(objectsImage, points[i], points[(i + 1) % 4], new Scalar(0, 255, 0), 5);
 				}
 			}
+			// Imgproc.fillPoly(objectsThresImage, objects, new Scalar(255));
 		}
 	}
 
@@ -183,7 +220,11 @@ public class ParkingMonitor implements Runnable {
 		}
 		// Output Objects Image
 		if (objectImageView != null) {
-			objectImageView.setImage(convertMatToImage(objectsImage));
+			if (MonitorSettings.objectThresholdView) {
+				objectImageView.setImage(convertMatToImage(objectsThresImage));
+			} else {
+				objectImageView.setImage(convertMatToImage(objectsImage));
+			}
 		}
 		// Output Spaces View
 		if (spacesImageView != null) {
@@ -245,7 +286,8 @@ public class ParkingMonitor implements Runnable {
 	 * @param objectImage
 	 * @Param spacesImage
 	 */
-	public void setOutputImages(ImageView defaultImage, ImageView thresholdImage, ImageView objectImage, ImageView spacesImage) {
+	public void setOutputImages(ImageView defaultImage, ImageView thresholdImage, ImageView objectImage,
+			ImageView spacesImage) {
 		this.defaultImageView = defaultImage;
 		this.thresholdImageView = thresholdImage;
 		this.objectImageView = objectImage;
