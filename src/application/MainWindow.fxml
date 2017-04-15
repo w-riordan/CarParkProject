@@ -10,6 +10,7 @@
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.image.ImageView?>
@@ -124,6 +125,8 @@
         <items>
           <Button fx:id="startButton" mnemonicParsing="false" onAction="#startMonitor" text="Start" />
             <Button fx:id="stopButton" mnemonicParsing="false" onAction="#stopMonitor" text="Stop" />
+            <Label text="Camera Index :" />
+            <TextField fx:id="camIndexTextField" prefHeight="26.0" prefWidth="34.0" text="-1" />
         </items>
       </ToolBar>
    </top>

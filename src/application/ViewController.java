@@ -6,12 +6,15 @@ import application.parking.MonitorSettings;
 import application.parking.ParkingMonitor;
 import application.parking.Space;
 import application.parking.SpaceManager;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
+import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.InputMethodEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 
@@ -35,9 +38,15 @@ public class ViewController {
 	@FXML
 	CheckBox erodingCheck, dilatingCheck, dropCheck;
 
+	@FXML
+	TextField camIndexTextField;
+
 	// Called when window is created
 	@FXML
 	void initialize() {
+		// Register change listener on camIndexTextField
+		camIndexTextField.textProperty().addListener((ov, old_val, new_val) -> onCamIndexChange(ov, old_val, new_val));
+
 		// Set up Slider listeners
 		threshBlockSlider.valueProperty().addListener((ov, old_val, new_val) -> setThreshBlockSize(new_val.intValue()));
 		threshChangeSlider.valueProperty()
@@ -46,15 +55,30 @@ public class ViewController {
 		erodeIterSlider.valueProperty().addListener((ov, old_val, new_val) -> setErodeIterations(new_val.intValue()));
 		dilateSizeSlider.valueProperty().addListener((ov, old_val, new_val) -> setDilateSize(new_val.intValue()));
 		dilateIterSlider.valueProperty().addListener((ov, old_val, new_val) -> setDilateIterations(new_val.intValue()));
-		
-		spacesImageView.setOnMouseClicked( e -> spacesClicked(e));
-		
+
+		// Register MouseClick Event handler on spacesImageView
+		spacesImageView.setOnMouseClicked(e -> spacesClicked(e));
+
 		// Create parking monitor
 		spaceMgr = new SpaceManager();
 		monitor = new ParkingMonitor(spaceMgr);
 		monitor.setOutputImages(defaultImageView, thresholdImageView, objectImageView, spacesImageView);
 	}
 
+	private void onCamIndexChange(ObservableValue<? extends String> ov, String old_val, String new_val) {
+		if (!new_val.matches("-?[0-9]+")) {
+			camIndexTextField.textProperty().setValue(old_val);
+		} else {
+			int value = Integer.parseInt(new_val);
+			value = (value >= -1) ? value : -1;
+			MonitorSettings.camIndex = value;
+		}
+
+	}
+
+	private void onCamIndexChanged(String old_val, String new_val) {
+
+	}
 
 	// Starts the ParkingMonitor
 	@FXML
@@ -63,6 +87,7 @@ public class ViewController {
 		// Make sure parking monitor isn't running already
 		if (!monitor.isRunning()) {
 			new Thread(monitor).start();
+			camIndexTextField.setEditable(false);
 		}
 
 	}
@@ -71,6 +96,9 @@ public class ViewController {
 	@FXML
 	void stopMonitor() {
 		monitor.stop();
+		if (camIndexTextField != null) {
+			camIndexTextField.setEditable(true);
+		}
 	}
 
 	@FXML
@@ -150,26 +178,27 @@ public class ViewController {
 	void setDilateIterations(int value) {
 		MonitorSettings.dilatingIterations = value;
 	}
-	
+
 	/**
-	 * This method handles MouseEvents on the spaces image.
-	 * Left Click to add points/Spaces 
-	 * Right Click to remove Spaces
-	 * @param e - The MouseEvent that occured
+	 * This method handles MouseEvents on the spaces image. Left Click to add
+	 * points/Spaces Right Click to remove Spaces
+	 * 
+	 * @param e
+	 *            - The MouseEvent that occured
 	 */
 	private void spacesClicked(MouseEvent e) {
-		double wratio=spacesImageView.getImage().getWidth()/spacesImageView.getFitWidth();
-		double hratio=spacesImageView.getImage().getHeight()/spacesImageView.getFitHeight();
-		//TODO USE CORRECT RATIO BASE ON CAMERA TYPE(LANSCAPE OR PORTRAIT)
-		double xCord =e.getX()*wratio;
-		double yCord =e.getY()*wratio;
-		if(e.getButton()== MouseButton.PRIMARY){
-			//Add point for new Space
-			spaceMgr.addPoint((int)(xCord), (int)(yCord));
-		}else if (e.getButton()==MouseButton.SECONDARY){
-			//Test spaces to find one to remove
-			for (Space s: spaceMgr.getSpaces()){
-				if (s.isPointInSpace((int)xCord, (int)yCord)){
+		double wratio = spacesImageView.getImage().getWidth() / spacesImageView.getFitWidth();
+		double hratio = spacesImageView.getImage().getHeight() / spacesImageView.getFitHeight();
+		// TODO USE CORRECT RATIO BASE ON CAMERA TYPE(LANSCAPE OR PORTRAIT)
+		double xCord = e.getX() * wratio;
+		double yCord = e.getY() * wratio;
+		if (e.getButton() == MouseButton.PRIMARY) {
+			// Add point for new Space
+			spaceMgr.addPoint((int) (xCord), (int) (yCord));
+		} else if (e.getButton() == MouseButton.SECONDARY) {
+			// Test spaces to find one to remove
+			for (Space s : spaceMgr.getSpaces()) {
+				if (s.isPointInSpace((int) xCord, (int) yCord)) {
 					spaceMgr.deleteSpace(s);
 					break;
 				}
