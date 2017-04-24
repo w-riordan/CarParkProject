@@ -216,15 +216,16 @@ public class ParkingMonitor implements Runnable {
 		}
 		// Output Threshold Image
 		if (thresholdImageView != null) {
-			thresholdImageView.setImage(convertMatToImage(thresholdImage));
+			if (MonitorSettings.objectThresholdView) {
+				thresholdImageView.setImage(convertMatToImage(objectsThresImage));
+			} else {
+				thresholdImageView.setImage(convertMatToImage(thresholdImage));
+			}
 		}
 		// Output Objects Image
 		if (objectImageView != null) {
-			if (MonitorSettings.objectThresholdView) {
-				objectImageView.setImage(convertMatToImage(objectsThresImage));
-			} else {
 				objectImageView.setImage(convertMatToImage(objectsImage));
-			}
+			
 		}
 		// Output Spaces View
 		if (spacesImageView != null) {

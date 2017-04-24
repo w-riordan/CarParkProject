@@ -35,8 +35,15 @@ public class ViewController {
 			dilateCrossRadio, dilateRectRadio, dilateEllipseRadio;
 	@FXML
 	Slider threshBlockSlider, threshChangeSlider, erodeSizeSlider, erodeIterSlider, dilateSizeSlider, dilateIterSlider;
+	
 	@FXML
-	CheckBox erodingCheck, dilatingCheck, dropCheck;
+	Slider ocupiedTimeSlider;
+	
+	@FXML
+	Slider occupiedPercentageSlider;
+	
+	@FXML
+	CheckBox erodingCheck, dilatingCheck, dropCheck,thresholdViewCheck;
 
 	@FXML
 	TextField camIndexTextField;
@@ -55,6 +62,8 @@ public class ViewController {
 		erodeIterSlider.valueProperty().addListener((ov, old_val, new_val) -> setErodeIterations(new_val.intValue()));
 		dilateSizeSlider.valueProperty().addListener((ov, old_val, new_val) -> setDilateSize(new_val.intValue()));
 		dilateIterSlider.valueProperty().addListener((ov, old_val, new_val) -> setDilateIterations(new_val.intValue()));
+		ocupiedTimeSlider.valueProperty().addListener((ov, old_val, new_val) -> setMinOccupiedTime(new_val.intValue()));
+		occupiedPercentageSlider.valueProperty().addListener((ov,old_val,new_val)->setOccupiedPercentage(new_val.doubleValue()));
 
 		// Register MouseClick Event handler on spacesImageView
 		spacesImageView.setOnMouseClicked(e -> spacesClicked(e));
@@ -65,20 +74,7 @@ public class ViewController {
 		monitor.setOutputImages(defaultImageView, thresholdImageView, objectImageView, spacesImageView);
 	}
 
-	private void onCamIndexChange(ObservableValue<? extends String> ov, String old_val, String new_val) {
-		if (!new_val.matches("-?[0-9]+")) {
-			camIndexTextField.textProperty().setValue(old_val);
-		} else {
-			int value = Integer.parseInt(new_val);
-			value = (value >= -1) ? value : -1;
-			MonitorSettings.camIndex = value;
-		}
 
-	}
-
-	private void onCamIndexChanged(String old_val, String new_val) {
-
-	}
 
 	// Starts the ParkingMonitor
 	@FXML
@@ -204,5 +200,31 @@ public class ViewController {
 				}
 			}
 		}
+	}
+	
+	private void setOccupiedPercentage(double val) {
+		MonitorSettings.occupiedPercentage = (val / 100.0);
+	}
+
+	private void setMinOccupiedTime(int new_val) {
+		MonitorSettings.occupiedTime = new_val;
+	}
+
+	private void onCamIndexChange(ObservableValue<? extends String> ov, String old_val, String new_val) {
+		if(!new_val.matches("")){
+			if (!new_val.matches("-?[0-9]+")) {
+				camIndexTextField.textProperty().setValue(old_val);
+			} else {
+				int value = Integer.parseInt(new_val);
+				value = (value >= -1) ? value : -1;
+				MonitorSettings.camIndex = value;
+			}
+		}
+
+	}
+	
+	@FXML
+	void setThreshView() {
+		MonitorSettings.objectThresholdView = thresholdViewCheck.isSelected();
 	}
 }

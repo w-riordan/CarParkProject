@@ -7,8 +7,11 @@ import java.awt.Rectangle;
 public class Space {
 	private Polygon space;
 	private boolean occupied = false;
+	private boolean occupiedCheck = false;
+	private int occupiedCounter = 0;
 	private int area = 0;
 	private String name = "";
+
 
 	public Space(int[] xpoints, int[] ypoints, String name) {
 		space = new Polygon(xpoints, ypoints, 4);
@@ -17,7 +20,15 @@ public class Space {
 	}
 
 	public void setOccupied(boolean occupied) {
-		this.occupied = occupied;
+		if (occupied == occupiedCheck){
+			occupiedCounter++;
+			if (occupiedCounter>=MonitorSettings.occupiedTime){
+				this.occupied=occupied;
+			}
+		}else{
+			occupiedCounter= 0;
+			occupiedCheck = occupied;
+		}
 	}
 
 	private void calculateArea() {

@@ -55,7 +55,7 @@
             </TabPane>
             <TabPane prefHeight="200.0" prefWidth="200.0" side="RIGHT" tabClosingPolicy="UNAVAILABLE">
               <tabs>
-                <Tab text="Thresholding Settings">
+                <Tab text="Thresholding">
                      <content>
                         <VBox prefHeight="200.0" prefWidth="100.0">
                            <children>
@@ -70,12 +70,12 @@
                               <Slider fx:id="threshBlockSlider" blockIncrement="2.0" majorTickUnit="10.0" max="50.0" min="3.0" minorTickCount="2" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="9.0" />
                               <Label text="Change Value:" />
                               <Slider fx:id="threshChangeSlider" blockIncrement="0.5" majorTickUnit="2.0" max="10.0" min="-10.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" snapToTicks="true" />
-                              <CheckBox fx:id="dropCheck" mnemonicParsing="false" onAction="#setDropCheck" selected="true" text="drop Childless" />
+                              <CheckBox fx:id="thresholdViewCheck" mnemonicParsing="false" onAction="#setThreshView" selected="true" text="Procesed View" />
                            </children>
                         </VBox>
                      </content>
                 </Tab>
-                <Tab text="Morphology Settings">
+                <Tab text="Morphology">
                      <content>
                         <VBox prefHeight="200.0" prefWidth="100.0">
                            <children>
@@ -115,6 +115,20 @@
                         </VBox>
                      </content>
                 </Tab>
+                  <Tab text="Detection">
+                     <content>
+                        <VBox prefHeight="200.0" prefWidth="100.0">
+                           <children>
+                              <Label text="Contours :" />
+                              <CheckBox fx:id="dropCheck" mnemonicParsing="false" onAction="#setDropCheck" selected="true" text="Only Closed" />
+                              <Label text="Min Frames Occupied:" />
+                              <Slider fx:id="ocupiedTimeSlider" blockIncrement="1.0" majorTickUnit="2.0" max="10.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="5.0" />
+                              <Label text="Occupied Percentage:" />
+                              <Slider fx:id="occupiedPercentageSlider" majorTickUnit="10.0" max="90.0" min="10.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="30.0" />
+                           </children>
+                        </VBox>
+                     </content>
+                  </Tab>
               </tabs>
             </TabPane>
         </items>
