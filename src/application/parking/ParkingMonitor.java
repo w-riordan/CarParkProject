@@ -5,6 +5,8 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import javax.swing.JOptionPane;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -18,9 +20,16 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+/**
+ * The parking monitor class is responsible for getting the image from the
+ * camera and analyzing it to detect if the spaces are occuppied or not. it also
+ * generates all the different views that are output to the GUI.
+ */
 public class ParkingMonitor implements Runnable {
 
 	boolean running = false; // Variable that states whether or not the monitor
@@ -33,12 +42,18 @@ public class ParkingMonitor implements Runnable {
 	// Matrices to hold the raw image data
 	Mat defaultImage, thresholdImage, objectsImage, spacesImage, objectsThresImage;
 
+	// Holds a reference to a SpaceManager
 	SpaceManager spaceMngr;
 
-	// Constructs a new parking monitor
+	/**
+	 *  Constructs a new parking monitor
+	 * @param sm - A SpaceMange for providing access to the spaces
+	 */
 	public ParkingMonitor(SpaceManager sm) {
 		spaceMngr = sm;
+		//Create the VideoCapture object
 		camera = new VideoCapture();
+		//Create the diffrent Matrices used to store the image data
 		defaultImage = new Mat();
 		thresholdImage = new Mat();
 		objectsImage = new Mat();
@@ -46,10 +61,12 @@ public class ParkingMonitor implements Runnable {
 		objectsThresImage = new Mat();
 	}
 
-	// Main Loop of monitor to be executed as a thread
+	/**
+	 *  Main Loop of monitor to be executed as a thread
+	 */
 	@Override
 	public void run() {
-
+		//open the camera with camIndex
 		camera.open(MonitorSettings.camIndex);
 		if (camera.isOpened()) {
 			running = true;
@@ -58,23 +75,23 @@ public class ParkingMonitor implements Runnable {
 				// Read frame from camera
 				camera.read(defaultImage);
 
-				// TODO Apply Smoothing Filters
-
-				// Threshold image
+				// Threshold the image
 				thresholdFrame();
 
 				// Detect Objects
 				detectObjects();
 
-				// TODO Update Parking Information
+				// Check & Update Parking Space Information
 				checkSpaces();
+				//Draw the Parking spaces
 				drawSpaces();
 				// Output images to ImageViews
 				updateImageViews();
 			} while (running);
+			//Release the camera
 			camera.release();
 		} else {
-			// TODO Could not open camera
+			JOptionPane.showMessageDialog(null, "The camera with index " + MonitorSettings.camIndex + "could not be opened");
 		}
 
 	}
@@ -113,8 +130,6 @@ public class ParkingMonitor implements Runnable {
 	 */
 	private void drawSpaces() {
 		defaultImage.copyTo(spacesImage);
-		// Imgproc.cvtColor(spacesImage, spacesImage, Imgproc.COLOR_GRAY2BGR);
-		System.out.println("Drawing");
 		for (Space s : spaceMngr.getSpaces()) {
 			ArrayList<MatOfPoint> points = new ArrayList<>();
 			Point[] p = new Point[4];
@@ -133,11 +148,13 @@ public class ParkingMonitor implements Runnable {
 			Rectangle bounds = s.getPolygon().getBounds();
 			Point centerPoint = new Point(((bounds.getWidth() / 2) + bounds.getX()) - (textSize.width / 2),
 					((bounds.getHeight() / 2) + bounds.getY()) - (textSize.height / 2));
-			System.err.println(s.getName());
 			Imgproc.putText(spacesImage, s.getName(), centerPoint, Core.FONT_HERSHEY_COMPLEX, 1.0, new Scalar(0, 0, 0));
 		}
 	}
 
+	/**
+	 * This method detects objects
+	 */
 	private void detectObjects() {
 		// copy the default image
 		defaultImage.copyTo(objectsImage);
@@ -224,8 +241,8 @@ public class ParkingMonitor implements Runnable {
 		}
 		// Output Objects Image
 		if (objectImageView != null) {
-				objectImageView.setImage(convertMatToImage(objectsImage));
-			
+			objectImageView.setImage(convertMatToImage(objectsImage));
+
 		}
 		// Output Spaces View
 		if (spacesImageView != null) {
@@ -279,7 +296,6 @@ public class ParkingMonitor implements Runnable {
 
 	/**
 	 * Set the Imageviews that the default,threshold and object images will be
-	 * output too. If an ImageView is set to null they're will be know output
 	 * for that image.
 	 * 
 	 * @param defaultImage
